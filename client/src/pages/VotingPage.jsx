@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import axios from "axios";
 import { Container,  Row, Col, Card, Button } from "react-bootstrap";
 export default function VotingPage() {
     // Add this player data
@@ -17,16 +18,48 @@ export default function VotingPage() {
         }
     ];
 
+    const backendUrl = "http://localhost:5000";
+
     const [votes, setVotes] = useState({
         messi: 0,
         ronaldo: 0
     });
 
-    const handleVote = (playerId) => {
-        setVotes({
-            ...votes,
-            [playerId]: votes[playerId] + 1
-        });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchVotes();
+    }, []);
+
+    const fetchVotes = async () => {
+        setLoading(true);
+        try {
+            const {data} = await axios.get(`${backendUrl}/api/votes`);
+            setVotes({
+                messi: data.messi,
+                ronaldo: data.ronaldo
+            });
+        } catch (error) {
+            console.error('Error fetching votes:', error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const handleVote = async (playerId) => {
+        setLoading(true);
+        try {
+            setVotes(prev => ({
+                ...prev,
+                [playerId]: prev[playerId] + 1
+            }));
+            await axios.post(`${backendUrl}/api/vote`, { playerId });
+            await fetchVotes();
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     };
     
     return (
